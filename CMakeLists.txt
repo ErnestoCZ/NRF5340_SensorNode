@@ -4,3 +4,4 @@ find_package(Zephyr REQUIRED HINTS $ENV{ZEPHYR_BASE})
 project(NRF5340_SensorNode)
 
 target_sources(app PRIVATE src/main.c)
+target_sources_ifdef(CONFIG_GPIO_HELPER app PRIVATE src/gpio_helper.c)
