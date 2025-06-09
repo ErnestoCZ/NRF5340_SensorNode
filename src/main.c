@@ -7,25 +7,29 @@
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
 
+#ifdef __has_include("defines.h")
+  #include "defines.h"
+#endif
+
 #ifdef CONFIG_GPIO_HELPER
-#include "gpio_helper.h"
+#include "cgpio/gpio_helper.h"
 #endif
 
 LOG_MODULE_REGISTER(NRF5340_SensorNode, LOG_LEVEL_DBG);
 
+#if ADD_TEMP_ADC == ON
 static uint8_t measured_temperature;
-
 static void sensor_update_thread_handler(struct adc_dt_spec *adc_channel) {
-
 
 }
 static const struct adc_dt_spec adc_ch0 = ADC_DT_SPEC_GET(DT_PATH(zephyr_user));
 int initADC();
-// K_THREAD_DEFINE(sensor_update_thread_id, 1024, sensor_update_thread_handler,
-//                 &adc_ch0, NULL, NULL, 7, K_USER, 0);
+K_THREAD_DEFINE(sensor_update_thread_id, 1024, sensor_update_thread_handler,
+                &adc_ch0, NULL, NULL, 7, K_USER, 0);
 
-#define DEVICE_NAME CONFIG_BT_DEVICE_NAME
-#define DEVICE_NAME_LEN (sizeof(DEVICE_NAME) - 1)
+
+#endif
+
 
 static struct bt_conn *my_conn = NULL;
 
@@ -79,10 +83,9 @@ int main(void) {
 
   int err;
   init_GPIO();
-  // INIT ADC
 
 
-
+#if ADD_TEMP_ADC == ON
   uint16_t buffer;
   struct adc_sequence adc_seq = {
       .buffer = &buffer,
@@ -109,6 +112,7 @@ int main(void) {
     }
     k_sleep(K_SECONDS(5));
   }
+#endif
   // while (true) {
 
   //   k_msleep(1000);
@@ -154,9 +158,9 @@ int main(void) {
 int initADC(const struct adc_dt_spec * adc_dev, struct adc_sequence * sequence){
   int err;
   if (!adc_is_ready_dt(adc_dev)) {
-    LOG_ERR("ADC %s with channel %d is not ready yet", adc_ch0.dev->name,
-            adc_ch0.channel_id);
-    return err;
+    LOG_ERR("ADC %s with channel %d is not ready yet", adc_dev->dev->name,
+            adc_dev->channel_id);
+    return -1;
   }
 
   err = adc_channel_setup_dt(adc_dev);
@@ -175,5 +179,6 @@ int initADC(const struct adc_dt_spec * adc_dev, struct adc_sequence * sequence){
     LOG_INF("ADC sequence init successfull");
   }
 
+  return err;
 
 };
